@@ -53,29 +53,48 @@ const login = async (req, res) => {
 const signup = async (req, res) => {
   try {
     const { User } = req.db;
-    const { password, email, phone_number } = req.body;
-    const existngUser = await User.findOne({
-      where: {
-        [Op.or]: [{ email }, { phone_number }],
-      },
-    });
-    if (existngUser) {
+    const { password, email, phone_number, name } = req.body;
+
+    // Ensure at least one of email or phone_number is provided
+    if (!email && !phone_number) {
       return res
         .status(400)
-        .json({ message: "email or phone number already exists.!" });
+        .json({ message: "Please provide either email or phone number." });
     }
+
+    // Construct dynamic query based on provided fields
+    const whereClause = {};
+    if (email) whereClause.email = email;
+    if (phone_number) whereClause.phone_number = phone_number;
+
+    // Check if an existing user already has the email or phone number
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [whereClause],
+      },
+    });
+
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "Email or phone number already exists!" });
+    }
+
+    // Hash password and create a new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       email,
       phone_number,
       password: hashedPassword,
+      name,
     });
-    res.status(201).json({ message: "Signup succesfull", user: newUser });
+
+    res.status(201).json({ message: "Signup successful", user: newUser });
   } catch (error) {
     console.log("Signup error: ", error);
     res
       .status(500)
-      .json({ message: "We have an error, please try again later" });
+      .json({ message: "An error occurred, please try again later." });
   }
 };
 

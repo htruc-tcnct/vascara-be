@@ -23,6 +23,9 @@ const User = sequelize.define(
         isEmail: true, // Kiểm tra định dạng email
       },
     },
+    name: {
+      type: DataTypes.STRING(100),
+    },
     phone_number: {
       type: DataTypes.STRING(20),
       allowNull: true,
