@@ -1,4 +1,3 @@
-const sequelize = require("./connectDB");
 const Category = require("../models/Category");
 const Product = require("../models/Product");
 const ProductTranslation = require("../models/ProductTranslation");
@@ -8,11 +7,12 @@ const User = require("../models/User");
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 
+// Thiết lập các mối quan hệ giữa các model
 Product.belongsTo(Category, { foreignKey: "category_id" });
 
 Product.hasMany(ProductTranslation, {
   foreignKey: "product_id",
-  as: "translations", // Alias phải trùng khớp khi sử dụng trong include
+  as: "translations",
 });
 Product.hasMany(ProductImage, {
   foreignKey: "product_id",
@@ -24,32 +24,21 @@ ProductImage.belongsTo(Product, {
 });
 ProductTranslation.belongsTo(Product, {
   foreignKey: "product_id",
-  as: "product", // Alias ngược nếu cần
+  as: "product",
 });
 
-Product.hasMany(Size, { foreignKey: "product_id" });
+Product.hasMany(Size, { foreignKey: "product_id", as: "sizes" });
+Size.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 
-Size.belongsTo(Product, { foreignKey: "product_id" });
-
-// Thiết lập quan hệ
+// Thiết lập quan hệ cho Cart và CartItem
 Cart.hasMany(CartItem, { foreignKey: "cart_id", as: "items" });
 CartItem.belongsTo(Cart, { foreignKey: "cart_id" });
 Product.hasMany(CartItem, { foreignKey: "product_id" });
 CartItem.belongsTo(Product, { foreignKey: "product_id" });
-// Đồng bộ hóa các models với cơ sở dữ liệu
 
-const syncDatabase = async () => {
-  try {
-    await sequelize.sync({ alter: true }); // Đồng bộ hóa mà không làm mất dữ liệu hiện có
-    console.log("Database & tables synced");
-  } catch (error) {
-    console.error("Error syncing database:", error);
-  }
-};
-
+// Middleware để gắn các model vào req.db
 const dbMiddleware = (req, res, next) => {
   req.db = {
-    sequelize,
     Category,
     Product,
     ProductTranslation,
@@ -62,4 +51,4 @@ const dbMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = { dbMiddleware, syncDatabase };
+module.exports = { dbMiddleware };

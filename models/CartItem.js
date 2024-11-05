@@ -33,6 +33,10 @@ const CartItem = sequelize.define(
       defaultValue: 1,
       allowNull: false,
     },
+    size: {
+      type: DataTypes.STRING, // Kích thước có thể là STRING hoặc ENUM (tùy theo yêu cầu)
+      allowNull: false,
+    },
   },
   {
     tableName: "cart_items",

@@ -13,10 +13,7 @@ const Product = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
-    stock: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
+
     category_id: {
       type: DataTypes.INTEGER,
       references: {

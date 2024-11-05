@@ -9,18 +9,21 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
-// var morgan = require("morgan");
-// app.use(morgan("tiny  "));
-app.use(cors());
+var morgan = require("morgan");
+app.use(morgan("tiny"));
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://192.168.1.39:3000"],
+    origin: [
+      "http://localhost:3000",
+      "http://192.168.1.39:3000",
+      "http://192.168.1.7:3000",
+    ],
+    credentials: true,
   })
 );
 
 app.use(express.json());
 app.use(dbMiddleware);
-syncDatabase();
 
 app.use("/products", productRoutes);
 app.use("/categories", categoryRoutes);

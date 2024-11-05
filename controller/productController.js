@@ -47,7 +47,7 @@ const getAllProducts = async (req, res) => {
 const getProductWithCondition = async (req, res) => {
   try {
     const { category_id, priceRange, sortSelect } = req.query;
-    const { Product, ProductTranslation, ProductImage } = req.db;
+    const { Product, ProductTranslation, ProductImage, Size } = req.db;
 
     const limit = parseInt(req.query.limit) || 20;
     const page = parseInt(req.query.page) || 1;
@@ -77,6 +77,7 @@ const getProductWithCondition = async (req, res) => {
         }
       }
     }
+
     if (sortSelect) {
       switch (sortSelect) {
         case "price_asc":
@@ -90,7 +91,8 @@ const getProductWithCondition = async (req, res) => {
           break;
       }
     }
-    // Lấy sản phẩm
+
+    // Lấy sản phẩm với thông tin size
     const products = await Product.findAll({
       where: filterConditions,
       order: orderConditions,
@@ -103,11 +105,17 @@ const getProductWithCondition = async (req, res) => {
           model: ProductImage,
           as: "product_images",
         },
+        {
+          model: Size,
+          as: "sizes",
+          attributes: ["size", "stock"], // Lấy thông tin size và tồn kho
+        },
       ],
       limit: limit,
       offset: offset,
     });
-    const totalProducts = await Product.count();
+
+    const totalProducts = await Product.count({ where: filterConditions });
     const totalPages = Math.ceil(totalProducts / limit);
 
     res.json({

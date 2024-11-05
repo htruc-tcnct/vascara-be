@@ -26,11 +26,7 @@ const User = sequelize.define(
     name: {
       type: DataTypes.STRING(100),
     },
-    phone_number: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-      unique: true,
-    },
+
     role: {
       type: DataTypes.ENUM("admin", "user"),
       defaultValue: "user", // Giá trị mặc định là "user"
