@@ -46,7 +46,7 @@ const getAllProducts = async (req, res) => {
 };
 const getProductWithCondition = async (req, res) => {
   try {
-    const { category_id, priceRange, sortSelect } = req.query;
+    const { category_id, priceRange, sortSelect, keyword } = req.query;
     const { Product, ProductTranslation, ProductImage, Size } = req.db;
 
     const limit = parseInt(req.query.limit) || 20;
@@ -55,29 +55,33 @@ const getProductWithCondition = async (req, res) => {
 
     let filterConditions = {};
     const orderConditions = [];
+
+    // Filter by category ID if provided
     if (category_id) {
       filterConditions.category_id = category_id;
     }
 
+    // Filter by price range if provided
     if (priceRange) {
       if (priceRange.startsWith(">")) {
         const min = Number(priceRange.slice(1).trim());
         if (!isNaN(min)) {
-          filterConditions.price = { [Op.gt]: min }; // Điều kiện lớn hơn
+          filterConditions.price = { [Op.gt]: min };
         }
       } else if (priceRange.startsWith("<")) {
         const max = Number(priceRange.slice(1).trim());
         if (!isNaN(max)) {
-          filterConditions.price = { [Op.lt]: max }; // Điều kiện nhỏ hơn
+          filterConditions.price = { [Op.lt]: max };
         }
       } else {
         const [min, max] = priceRange.split("-").map(Number);
         if (!isNaN(min) && !isNaN(max)) {
-          filterConditions.price = { [Op.between]: [min, max] }; // Điều kiện trong khoảng
+          filterConditions.price = { [Op.between]: [min, max] };
         }
       }
     }
 
+    // Sorting condition if provided
     if (sortSelect) {
       switch (sortSelect) {
         case "price_asc":
@@ -92,7 +96,23 @@ const getProductWithCondition = async (req, res) => {
       }
     }
 
-    // Lấy sản phẩm với thông tin size
+    // Translation and Size filter conditions based on category
+    let translationFilterConditions = {};
+    let sizeFilterConditions = {};
+
+    if (category_id === "1") {
+      // Apply keyword filter on ProductTranslation if category_id is 1
+      if (keyword) {
+        translationFilterConditions.name = { [Op.like]: `%${keyword}%` };
+      }
+    } else if (category_id === "3") {
+      // Apply keyword filter on Size if category_id is 3
+      if (keyword) {
+        sizeFilterConditions.size = { [Op.like]: `%${keyword}%` };
+      }
+    }
+
+    // Fetch products with the provided filters and includes
     const products = await Product.findAll({
       where: filterConditions,
       order: orderConditions,
@@ -100,6 +120,9 @@ const getProductWithCondition = async (req, res) => {
         {
           model: ProductTranslation,
           as: "translations",
+          where: Object.keys(translationFilterConditions).length
+            ? translationFilterConditions
+            : undefined,
         },
         {
           model: ProductImage,
@@ -108,14 +131,39 @@ const getProductWithCondition = async (req, res) => {
         {
           model: Size,
           as: "sizes",
-          attributes: ["size", "stock"], // Lấy thông tin size và tồn kho
+          where: Object.keys(sizeFilterConditions).length
+            ? sizeFilterConditions
+            : undefined,
+          attributes: ["size", "stock"],
         },
       ],
       limit: limit,
       offset: offset,
     });
 
-    const totalProducts = await Product.count({ where: filterConditions });
+    // Count distinct products with filters, avoiding duplicate counts for translations and sizes
+    const totalProducts = await Product.count({
+      where: filterConditions,
+      distinct: true,
+      col: "product_id",
+      include: [
+        {
+          model: ProductTranslation,
+          as: "translations",
+          where: Object.keys(translationFilterConditions).length
+            ? translationFilterConditions
+            : undefined,
+        },
+        {
+          model: Size,
+          as: "sizes",
+          where: Object.keys(sizeFilterConditions).length
+            ? sizeFilterConditions
+            : undefined,
+        },
+      ],
+    });
+
     const totalPages = Math.ceil(totalProducts / limit);
 
     res.json({
