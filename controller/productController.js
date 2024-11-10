@@ -56,12 +56,10 @@ const getProductWithCondition = async (req, res) => {
     let filterConditions = {};
     const orderConditions = [];
 
-    // Filter by category ID if provided
     if (category_id) {
       filterConditions.category_id = category_id;
     }
 
-    // Filter by price range if provided
     if (priceRange) {
       if (priceRange.startsWith(">")) {
         const min = Number(priceRange.slice(1).trim());
@@ -81,7 +79,6 @@ const getProductWithCondition = async (req, res) => {
       }
     }
 
-    // Sorting condition if provided
     if (sortSelect) {
       switch (sortSelect) {
         case "price_asc":
@@ -96,19 +93,20 @@ const getProductWithCondition = async (req, res) => {
       }
     }
 
-    // Translation and Size filter conditions based on category
     let translationFilterConditions = {};
     let sizeFilterConditions = {};
 
     if (category_id === "1") {
-      // Apply keyword filter on ProductTranslation if category_id is 1
       if (keyword) {
         translationFilterConditions.name = { [Op.like]: `%${keyword}%` };
       }
     } else if (category_id === "3") {
-      // Apply keyword filter on Size if category_id is 3
       if (keyword) {
         sizeFilterConditions.size = { [Op.like]: `%${keyword}%` };
+      }
+    } else if (category_id === "2") {
+      if (keyword) {
+        translationFilterConditions.name = { [Op.like]: `%${keyword}%` };
       }
     }
 

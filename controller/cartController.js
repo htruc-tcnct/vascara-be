@@ -1,3 +1,5 @@
+const { where } = require("sequelize");
+
 const getCartByUserId = async (req, res) => {
   try {
     const { userId } = req.query;
@@ -7,7 +9,6 @@ const getCartByUserId = async (req, res) => {
       return res.status(400).json({ error: "User ID is required." });
     }
 
-    // Find the user's cart with the correct alias for CartItem
     const cart = await Cart.findOne({
       where: { user_id: userId },
       include: [
@@ -108,8 +109,62 @@ const addToCart = async (req, res) => {
     res.status(500).json({ message: "Server error, please try again later." });
   }
 };
+const deleteItems = async (req, res) => {
+  const { idCart } = req.query;
+  const { CartItem } = req.db; // Giả định CartItem là mô hình Sequelize
 
+  if (!idCart) {
+    return res
+      .status(400)
+      .json({ error: "Error when deleting items: idCart is required" });
+  }
+
+  try {
+    const result = await CartItem.destroy({ where: { cart_item_id: idCart } }); // Xóa dựa trên idCart
+
+    if (result === 0) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    res.status(201).json({ message: "Item deleted successfully" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error when deleting item", details: err.message });
+  }
+};
+const updateItems = async (req, res) => {
+  const { cartItemId, quantity } = req.query;
+  const { CartItem } = req.db;
+  if (!cartItemId || !quantity) {
+    return res.status(400).json({ Erorr: "Not enough inf to update" });
+  }
+  try {
+    const cartItem = await CartItem.findOne({
+      where: { cart_item_id: cartItemId },
+    });
+    if (!cartItem) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+    const newQuantity = cartItem.quantity + parseInt(quantity, 10);
+    if (newQuantity > 0) {
+      await CartItem.update(
+        { quantity: newQuantity },
+        { where: { cart_item_id: cartItemId } }
+      );
+      return res.status(200).json({ message: "Quantity updated successfull" });
+    } else {
+      await CartItem.destroy({ where: { cart_item_id: cartItemId } });
+
+      return res.status(200).json({ message: "Item deleted successfully" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Error when updating item", detail: err });
+  }
+};
 module.exports = {
   getCartByUserId,
   addToCart,
+  deleteItems,
+  updateItems,
 };
