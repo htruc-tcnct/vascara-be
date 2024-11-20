@@ -4,6 +4,7 @@ const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const userRoutes = require("./routes/userRoutes");
 const cartRoutes = require("./routes/cartRoutes");
+const addressRoutes = require("./routes/addressRoutes");
 const app = express();
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -15,7 +16,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "http://192.168.1.39:3000",
+      "http://192.168.2.59:3000",
       "http://192.168.1.7:3000",
     ],
     credentials: true,
@@ -29,6 +30,7 @@ app.use("/products", productRoutes);
 app.use("/categories", categoryRoutes);
 app.use("/users", userRoutes);
 app.use("/carts", cartRoutes);
+app.use("/address", addressRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server listening on ${process.env.PORT}`);
 });

@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const { google } = require("googleapis");
 
 // Lấy OAuth2 từ googleapis
@@ -38,7 +38,7 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.user_id, email: user.email, role: user.role },
+      { userId: user.user_id, email: user.email, role: user.role }, // Use userId
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -54,7 +54,7 @@ const login = async (req, res) => {
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserByEmail = async (req, res) => {
   try {
     const { User } = req.db;
     const { email } = req.params;
@@ -78,6 +78,52 @@ const getUserById = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Error occurred while retrieving user: ", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred, please try again later." });
+  }
+};
+const getUserById = async (req, res) => {
+  try {
+    const { User, Address } = req.db;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "id is required." });
+    }
+
+    // Retrieve user by ID and include related addresses
+    const user = await User.findOne({
+      where: { user_id: id },
+      include: [
+        {
+          model: Address,
+          as: "addresses", // Ensure this matches the association alias in your model definition
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User with this id does not exist in the system.",
+      });
+    }
+
+    res.status(200).json({
+      message: "User retrieved successfully",
+      user: {
+        id: user.user_id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        gender: user.gender,
+        birthday: user.birthday,
+        phonenumber: user.phonenumber,
+        address: user.addresses, // Include the addresses here
       },
     });
   } catch (error) {
@@ -224,6 +270,103 @@ const requestResetPassword = async (req, res) => {
       .json({ message: "An error occurred, please try again later." });
   }
 };
+const updateInfo = async (req, res) => {
+  const { User, Address } = req.db; // Model người dùng được truyền từ middleware
+  const { userId } = req.params; // Lấy ID người dùng từ tham số URL
+  const {
+    name,
+    phonenumber,
+    email,
+    birthday,
+    provinceCode,
+    districtCode,
+    wardCode,
+    addressDetail,
+    gender,
+  } = req.body;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const address = await Address.findByPk(userId);
+    if (!address) {
+      return res.status(404).json({ message: "address not found" });
+    }
+    await user.update({
+      name,
+      phonenumber,
+      email,
+      birthday,
+      gender,
+      address: {
+        province: provinceCode,
+        district: districtCode,
+        ward: wardCode,
+        detail: addressDetail,
+      },
+    });
+    await address.update({
+      province: provinceCode,
+      ward: wardCode,
+      district: districtCode,
+      specific_address: addressDetail,
+    });
+
+    res.status(200).json({
+      message: "User information updated successfully",
+      user: {
+        id: user.user_id,
+        name: user.name,
+        phonenumber: user.phonenumber,
+        email: user.email,
+        birthday: user.birthday,
+        gender: user.gender,
+        address: user.address,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating user info:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while updating user info" });
+  }
+};
+const updatePass = async (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body; // Corrected this to use object destructuring
+
+  const { User } = req.db; // Adjust based on your actual database structure
+
+  if (!userId || !currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required!" });
+  }
+
+  try {
+    const user = await User.findOne({ where: { user_id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ message: "Current password is incorrect!" });
+    }
+
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = newHashedPassword;
+    await user.save(); // Save the updated user
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while updating the password." });
+  }
+};
 
 module.exports = {
   signup,
@@ -231,4 +374,7 @@ module.exports = {
   reset_password,
   getUserById,
   requestResetPassword,
+  getUserByEmail,
+  updateInfo,
+  updatePass,
 };

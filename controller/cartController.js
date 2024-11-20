@@ -1,9 +1,8 @@
 const { where } = require("sequelize");
-
 const getCartByUserId = async (req, res) => {
   try {
-    const { userId } = req.query;
-    const { Cart, CartItem, Product } = req.db;
+    const userId = req.user?.userId;
+    const { Cart, CartItem, Product, ProductTranslation } = req.db;
 
     if (!userId) {
       return res.status(400).json({ error: "User ID is required." });
@@ -14,11 +13,18 @@ const getCartByUserId = async (req, res) => {
       include: [
         {
           model: CartItem,
-          as: "items", // Use the alias 'items' as defined in your association
+          as: "items", // Sử dụng alias 'items' như đã định nghĩa trong mối quan hệ
           include: [
             {
               model: Product,
               attributes: ["price", "main_image_url", "hover_image_url"],
+              include: [
+                {
+                  model: ProductTranslation,
+                  as: "translations", // Đảm bảo alias trùng với định nghĩa trong mô hình
+                  attributes: ["name", "language"], // Lấy name và language từ ProductTranslation
+                },
+              ],
             },
           ],
         },
@@ -29,16 +35,27 @@ const getCartByUserId = async (req, res) => {
       return res.status(404).json({ error: "Cart not found." });
     }
 
-    // Extract cart items using the 'items' alias
-    const cartItems = cart.items.map((item) => ({
-      cartItemId: item.cart_item_id,
-      productId: item.product_id,
-      quantity: item.quantity,
-      size: item.size,
-      price: item.Product.price,
-      mainImageUrl: item.Product.main_image_url,
-      hoverImageUrl: item.Product.hover_image_url,
-    }));
+    // Extract cart items with both English and Vietnamese translations
+    const cartItems = cart.items.map((item) => {
+      const translations = item.Product.translations.reduce(
+        (acc, translation) => {
+          acc[translation.language] = translation.name;
+          return acc;
+        },
+        {}
+      );
+
+      return {
+        cartItemId: item.cart_item_id,
+        productId: item.product_id,
+        quantity: item.quantity,
+        size: item.size,
+        price: item.Product.price,
+        mainImageUrl: item.Product.main_image_url,
+        hoverImageUrl: item.Product.hover_image_url,
+        translations, // Gồm cả 'en' và 'vi' (nếu có) trong đối tượng translations
+      };
+    });
 
     return res.status(200).json({ cartItems });
   } catch (error) {
@@ -53,7 +70,7 @@ const addToCart = async (req, res) => {
   try {
     const { Cart, CartItem, Product, Size } = req.db;
     const { product_id, quantity, size } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     const product = await Product.findByPk(product_id);
     if (!product) {

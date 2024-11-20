@@ -18,7 +18,6 @@ const getAllProducts = async (req, res) => {
           as: "product_images",
         },
       ],
-      limit: limit,
       offset: offset,
     });
 
@@ -177,8 +176,54 @@ const getProductWithCondition = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch products" });
   }
 };
+const getProductWithId = async (req, res) => {
+  try {
+    const { id } = req.params; // Get the product ID from request parameters
+
+    if (!id) {
+      return res.status(400).json({ message: "Product ID is required" });
+    }
+
+    const { Product, ProductTranslation, ProductImage, Size, Category } =
+      req.db;
+
+    // Fetch the product and its related data
+    const product = await Product.findOne({
+      where: { product_id: id },
+      include: [
+        {
+          model: ProductTranslation,
+          as: "translations", // Ensure this matches the `as` in the association
+        },
+        {
+          model: ProductImage,
+          as: "product_images",
+        },
+        {
+          model: Size,
+          as: "sizes",
+          attributes: ["size", "stock"], // Fetch only size and stock fields
+        },
+        {
+          model: Category,
+          as: "category", // Ensure this matches the `as` in the association
+        },
+      ],
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json({ product });
+  } catch (err) {
+    console.error("Error fetching product:", err.message || err);
+    res.status(500).json({ message: "Failed to fetch product" });
+  }
+};
 
 module.exports = {
   getAllProducts,
   getProductWithCondition,
+  getProductWithId,
 };

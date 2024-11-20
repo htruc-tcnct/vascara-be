@@ -18,6 +18,11 @@ module.exports = {
         allowNull: false,
         unique: true,
       },
+      phonenumber: {
+        type: Sequelize.STRING(10),
+        allowNull: true,
+        unique: true,
+      },
       name: {
         type: Sequelize.STRING(100),
       },
@@ -25,6 +30,21 @@ module.exports = {
         type: Sequelize.ENUM("admin", "user"),
         defaultValue: "user",
         allowNull: false,
+      },
+      gender: {
+        type: Sequelize.ENUM("male", "female", "other"),
+        allowNull: true,
+        defaultValue: "other",
+      },
+      address: {
+        type: Sequelize.JSON,
+        allowNull: true,
+        defaultValue: {
+          province: null,
+          district: null,
+          ward: null,
+          detail: null,
+        },
       },
       created_at: {
         type: Sequelize.DATE,
@@ -37,7 +57,8 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+  down: async (queryInterface) => {
+    // Simply drop the table
     await queryInterface.dropTable("users");
   },
 };

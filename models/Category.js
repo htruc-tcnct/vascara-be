@@ -13,6 +13,10 @@ const Category = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    description: {
+      type: DataTypes.TEXT, // Add the description field
+      allowNull: true, // Allow null if the description is optional
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

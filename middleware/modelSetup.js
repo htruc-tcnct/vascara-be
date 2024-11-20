@@ -6,10 +6,16 @@ const ProductImage = require("../models/ProductImage");
 const User = require("../models/User");
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
+const Address = require("../models/Address"); // Import Address model
 
-// Thiết lập các mối quan hệ giữa các model
-Product.belongsTo(Category, { foreignKey: "category_id" });
+// Product and Category relationships
+Product.belongsTo(Category, { foreignKey: "category_id", as: "category" });
+Category.hasMany(Product, {
+  foreignKey: "category_id",
+  as: "products",
+});
 
+// Product translations and images relationships
 Product.hasMany(ProductTranslation, {
   foreignKey: "product_id",
   as: "translations",
@@ -27,16 +33,21 @@ ProductTranslation.belongsTo(Product, {
   as: "product",
 });
 
+// Product and Size relationships
 Product.hasMany(Size, { foreignKey: "product_id", as: "sizes" });
 Size.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 
-// Thiết lập quan hệ cho Cart và CartItem
+// Cart and CartItem relationships
 Cart.hasMany(CartItem, { foreignKey: "cart_id", as: "items" });
 CartItem.belongsTo(Cart, { foreignKey: "cart_id" });
 Product.hasMany(CartItem, { foreignKey: "product_id" });
 CartItem.belongsTo(Product, { foreignKey: "product_id" });
 
-// Middleware để gắn các model vào req.db
+// User and Address relationships
+User.hasMany(Address, { foreignKey: "user_id", as: "addresses" });
+Address.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+// Middleware to attach models to req.db
 const dbMiddleware = (req, res, next) => {
   req.db = {
     Category,
@@ -47,6 +58,7 @@ const dbMiddleware = (req, res, next) => {
     User,
     Cart,
     CartItem,
+    Address, // Include Address model
   };
   next();
 };

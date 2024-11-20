@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../middleware/connectDB"); // Đảm bảo đường dẫn đúng đến file database.js
+const sequelize = require("../middleware/connectDB");
 
 const User = sequelize.define(
   "User",
@@ -10,7 +10,6 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-
     password: {
       type: DataTypes.STRING(255),
       allowNull: false,
@@ -20,16 +19,20 @@ const User = sequelize.define(
       allowNull: false,
       unique: true,
       validate: {
-        isEmail: true, // Kiểm tra định dạng email
+        isEmail: true,
       },
+    },
+    phonenumber: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      unique: true,
     },
     name: {
       type: DataTypes.STRING(100),
     },
-
     role: {
       type: DataTypes.ENUM("admin", "user"),
-      defaultValue: "user", // Giá trị mặc định là "user"
+      defaultValue: "user",
       allowNull: false,
     },
     created_at: {
@@ -40,12 +43,38 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    birthday: {
+      type: DataTypes.DATEONLY,
+    },
+
+    address: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {
+        province: null,
+        district: null,
+        ward: null,
+        detail: null,
+      },
+      validate: {
+        isObject(value) {
+          if (typeof value !== "object" || value === null) {
+            throw new Error("Address must be an object.");
+          }
+        },
+      },
+    },
+    gender: {
+      type: DataTypes.ENUM("male", "female", "other"),
+      allowNull: true,
+      defaultValue: "other",
+    },
   },
   {
-    tableName: "users", // Tên bảng trong CSDL
-    timestamps: true, // Tự động thêm `createdAt` và `updatedAt`
-    createdAt: "created_at", // Sử dụng trường `created_at` thay cho `createdAt`
-    updatedAt: "updated_at", // Sử dụng trường `updated_at` thay cho `updatedAt`
+    tableName: "users",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
   }
 );
 
