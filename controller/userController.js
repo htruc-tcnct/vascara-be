@@ -6,10 +6,9 @@ const { google } = require("googleapis");
 
 // Lấy OAuth2 từ googleapis
 const OAuth2 = google.auth.OAuth2;
-
 const login = async (req, res) => {
   try {
-    const { User } = req.db; // Import User từ database
+    const { User } = req.db; // Import User from database
     const { email, password } = req.body;
 
     if (!password || !email) {
@@ -18,6 +17,7 @@ const login = async (req, res) => {
         .json({ message: "Email and password are required." });
     }
 
+    // Find user by email
     const user = await User.findOne({
       where: {
         email,
@@ -30,6 +30,7 @@ const login = async (req, res) => {
         .json({ message: "Login failed, email or password is incorrect!" });
     }
 
+    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res
@@ -37,15 +38,30 @@ const login = async (req, res) => {
         .json({ message: "Login failed, password is incorrect!" });
     }
 
+    // Generate JWT token
     const token = jwt.sign(
-      { userId: user.user_id, email: user.email, role: user.role }, // Use userId
+      { userId: user.user_id, email: user.email, role: user.role }, // Include role in the payload
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    res
-      .status(200)
-      .json({ message: "Login successful", token, idUser: user.user_id });
+    // Check the user's role
+    if (user.role === "admin") {
+      return res.status(200).json({
+        message: "Login successful (Admin)",
+        token,
+        role: user.role,
+        idUser: user.user_id,
+      });
+    }
+
+    // For non-admin users
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      role: user.role,
+      idUser: user.user_id,
+    });
   } catch (error) {
     console.error("Error occurred during login: ", error);
     res
