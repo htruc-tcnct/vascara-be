@@ -5,6 +5,8 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const userRoutes = require("./routes/userRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const addressRoutes = require("./routes/addressRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const orderRoutes = require("./routes/orderRotes");
 const app = express();
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -31,6 +33,8 @@ app.use("/categories", categoryRoutes);
 app.use("/users", userRoutes);
 app.use("/carts", cartRoutes);
 app.use("/address", addressRoutes);
+app.use("/admin", adminRoutes);
+app.use("/order", orderRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server listening on ${process.env.PORT}`);
 });

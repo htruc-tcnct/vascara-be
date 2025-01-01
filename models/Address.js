@@ -17,26 +17,17 @@ const Address = sequelize.define(
       type: DataTypes.STRING(10),
       allowNull: false,
     },
-    province_name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
+
     district_code: {
       type: DataTypes.STRING(10),
       allowNull: false,
     },
-    district_name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
+
     ward_code: {
       type: DataTypes.STRING(10),
       allowNull: false,
     },
-    ward_name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
+
     specific_address: {
       type: DataTypes.STRING(255),
       allowNull: false,

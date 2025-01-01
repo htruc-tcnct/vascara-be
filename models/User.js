@@ -47,23 +47,6 @@ const User = sequelize.define(
       type: DataTypes.DATEONLY,
     },
 
-    address: {
-      type: DataTypes.JSON,
-      allowNull: true,
-      defaultValue: {
-        province: null,
-        district: null,
-        ward: null,
-        detail: null,
-      },
-      validate: {
-        isObject(value) {
-          if (typeof value !== "object" || value === null) {
-            throw new Error("Address must be an object.");
-          }
-        },
-      },
-    },
     gender: {
       type: DataTypes.ENUM("male", "female", "other"),
       allowNull: true,

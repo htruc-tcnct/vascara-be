@@ -7,6 +7,8 @@ const User = require("../models/User");
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 const Address = require("../models/Address"); // Import Address model
+const Order = require("../models/Order");
+const OrderItems = require("../models/Order_Items");
 
 // Product and Category relationships
 Product.belongsTo(Category, { foreignKey: "category_id", as: "category" });
@@ -47,6 +49,10 @@ CartItem.belongsTo(Product, { foreignKey: "product_id" });
 User.hasMany(Address, { foreignKey: "user_id", as: "addresses" });
 Address.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+OrderItems.belongsTo(Order, { foreignKey: "order_id" });
+OrderItems.belongsTo(Product, { foreignKey: "product_id" });
+Order.hasMany(OrderItems, { foreignKey: "order_id" });
+Product.hasMany(OrderItems, { foreignKey: "product_id" });
 // Middleware to attach models to req.db
 const dbMiddleware = (req, res, next) => {
   req.db = {
@@ -57,6 +63,8 @@ const dbMiddleware = (req, res, next) => {
     ProductImage,
     User,
     Cart,
+    Order,
+    OrderItems,
     CartItem,
     Address, // Include Address model
   };

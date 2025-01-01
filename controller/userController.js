@@ -112,7 +112,6 @@ const getUserById = async (req, res) => {
       return res.status(400).json({ message: "id is required." });
     }
 
-    // Retrieve user by ID and include related addresses
     const user = await User.findOne({
       where: { user_id: id },
       include: [
@@ -139,7 +138,7 @@ const getUserById = async (req, res) => {
         gender: user.gender,
         birthday: user.birthday,
         phonenumber: user.phonenumber,
-        address: user.addresses, // Include the addresses here
+        address: user.addresses,
       },
     });
   } catch (error) {
@@ -287,7 +286,7 @@ const requestResetPassword = async (req, res) => {
   }
 };
 const updateInfo = async (req, res) => {
-  const { User, Address } = req.db; // Model người dùng được truyền từ middleware
+  const { User, Address } = req.db; // Model User và Address từ middleware
   const { userId } = req.params; // Lấy ID người dùng từ tham số URL
   const {
     name,
@@ -302,33 +301,44 @@ const updateInfo = async (req, res) => {
   } = req.body;
 
   try {
+    // Kiểm tra xem người dùng có tồn tại không
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const address = await Address.findByPk(userId);
-    if (!address) {
-      return res.status(404).json({ message: "address not found" });
-    }
+
+    // Cập nhật thông tin người dùng
     await user.update({
       name,
       phonenumber,
       email,
       birthday,
       gender,
-      address: {
-        province: provinceCode,
-        district: districtCode,
-        ward: wardCode,
-        detail: addressDetail,
-      },
     });
-    await address.update({
-      province: provinceCode,
-      ward: wardCode,
-      district: districtCode,
-      specific_address: addressDetail,
+
+    // Kiểm tra xem địa chỉ của người dùng đã tồn tại chưa
+    let address = await Address.findOne({
+      where: { user_id: userId }, // Kiểm tra theo khóa ngoại user_id
     });
+
+    if (address) {
+      // Nếu địa chỉ đã tồn tại, thì cập nhật
+      await address.update({
+        province_code: provinceCode,
+        district_code: districtCode,
+        ward_code: wardCode,
+        specific_address: addressDetail,
+      });
+    } else {
+      // Nếu địa chỉ chưa tồn tại, thì tạo mới
+      address = await Address.create({
+        user_id: userId,
+        province_code: provinceCode,
+        district_code: districtCode,
+        ward_code: wardCode,
+        specific_address: addressDetail,
+      });
+    }
 
     res.status(200).json({
       message: "User information updated successfully",
@@ -339,7 +349,12 @@ const updateInfo = async (req, res) => {
         email: user.email,
         birthday: user.birthday,
         gender: user.gender,
-        address: user.address,
+        address: {
+          province_code: address.province_code,
+          district_code: address.district_code,
+          ward_code: address.ward_code,
+          specific_address: address.specific_address,
+        },
       },
     });
   } catch (error) {
@@ -349,6 +364,7 @@ const updateInfo = async (req, res) => {
       .json({ message: "An error occurred while updating user info" });
   }
 };
+
 const updatePass = async (req, res) => {
   const { userId, currentPassword, newPassword } = req.body; // Corrected this to use object destructuring
 

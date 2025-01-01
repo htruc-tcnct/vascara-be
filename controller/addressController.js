@@ -18,9 +18,9 @@ const addNewAddress = async (req, res) => {
     return res.status(400).json({
       error: "All fields are required",
       missingFields: {
-        province_code: !province_code,
-        district_code: !district_code,
-        ward_code: !ward_code,
+        province: !province_code,
+        district: !district_code,
+        ward: !ward_code,
         specific_address: !specific_address,
       },
     });
@@ -42,11 +42,8 @@ const addNewAddress = async (req, res) => {
     const newAddress = await Address.create({
       user_id: userId,
       province_code,
-      province_name,
       district_code,
-      district_name,
       ward_code,
-      ward_name,
       specific_address,
     });
 
