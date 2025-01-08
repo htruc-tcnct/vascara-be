@@ -293,10 +293,7 @@ const updateInfo = async (req, res) => {
     phonenumber,
     email,
     birthday,
-    provinceCode,
-    districtCode,
-    wardCode,
-    addressDetail,
+
     gender,
   } = req.body;
 
@@ -316,30 +313,6 @@ const updateInfo = async (req, res) => {
       gender,
     });
 
-    // Kiểm tra xem địa chỉ của người dùng đã tồn tại chưa
-    let address = await Address.findOne({
-      where: { user_id: userId }, // Kiểm tra theo khóa ngoại user_id
-    });
-
-    if (address) {
-      // Nếu địa chỉ đã tồn tại, thì cập nhật
-      await address.update({
-        province_code: provinceCode,
-        district_code: districtCode,
-        ward_code: wardCode,
-        specific_address: addressDetail,
-      });
-    } else {
-      // Nếu địa chỉ chưa tồn tại, thì tạo mới
-      address = await Address.create({
-        user_id: userId,
-        province_code: provinceCode,
-        district_code: districtCode,
-        ward_code: wardCode,
-        specific_address: addressDetail,
-      });
-    }
-
     res.status(200).json({
       message: "User information updated successfully",
       user: {
@@ -349,12 +322,6 @@ const updateInfo = async (req, res) => {
         email: user.email,
         birthday: user.birthday,
         gender: user.gender,
-        address: {
-          province_code: address.province_code,
-          district_code: address.district_code,
-          ward_code: address.ward_code,
-          specific_address: address.specific_address,
-        },
       },
     });
   } catch (error) {

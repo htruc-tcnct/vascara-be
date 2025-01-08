@@ -3,7 +3,7 @@ const axios = require("axios");
 const addNewAddress = async (req, res) => {
   const { Address } = req.db;
 
-  const userId = req.user?.userId; // Assuming `id` is the field set in the JWT payload
+  const userId = req.user?.userId;
   if (!userId) {
     return res
       .status(400)
@@ -13,7 +13,6 @@ const addNewAddress = async (req, res) => {
   const { province_code, district_code, ward_code, specific_address } =
     req.body;
 
-  // Kiểm tra dữ liệu đầu vào
   if (!province_code || !district_code || !ward_code || !specific_address) {
     return res.status(400).json({
       error: "All fields are required",
@@ -27,26 +26,53 @@ const addNewAddress = async (req, res) => {
   }
 
   try {
-    // Fetch tên của tỉnh, huyện, xã từ API
-    const [provinceData, districtData, wardData] = await Promise.all([
-      axios.get(`https://provinces.open-api.vn/api/p/${province_code}`),
-      axios.get(`https://provinces.open-api.vn/api/d/${district_code}`),
-      axios.get(`https://provinces.open-api.vn/api/w/${ward_code}`),
+    const [province_data, district_data, ward_data] = await Promise.all([
+      axios.get(`${process.env.API_MAP_VN}/p/${province_code}`).catch((err) => {
+        console.error(
+          "Error fetching province:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
+      axios.get(`${process.env.API_MAP_VN}/d/${district_code}`).catch((err) => {
+        console.error(
+          "Error fetching district:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
+      axios.get(`${process.env.API_MAP_VN}/w/${ward_code}`).catch((err) => {
+        console.error(
+          "Error fetching ward:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
     ]);
 
-    const province_name = provinceData.data.name;
-    const district_name = districtData.data.name;
-    const ward_name = wardData.data.name;
-
-    // Tạo địa chỉ mới
+    if (!province_data || !district_data || !ward_data) {
+      return res.status(400).json({
+        error: "Failed to fetch one or more address components",
+        details: {
+          province: province_data?.data || "Not found",
+          district: district_data?.data || "Not found",
+          ward: ward_data?.data || "Not found",
+        },
+      });
+    }
+    console.log("province_data: ", province_data.data);
     const newAddress = await Address.create({
       user_id: userId,
       province_code,
       district_code,
       ward_code,
+      province_name: province_data?.data?.name || "Unknown Province",
+      district_name: district_data?.data?.name || "Unknown District",
+      ward_name: ward_data?.data?.name || "Unknown Ward",
       specific_address,
     });
 
+    console.log("newAddress: ", newAddress);
     return res.status(201).json({
       message: "Address added successfully",
       address: newAddress,
@@ -56,9 +82,145 @@ const addNewAddress = async (req, res) => {
     return res.status(500).json({
       error:
         "An error occurred while adding the address. Please try again later.",
+      detail: err.message,
     });
   }
 };
+const deleteAddress = async (req, res) => {
+  const { Address } = req.db;
+  const userId = req.user?.userId;
+  const addressId = req.params.id;
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ error: "User ID is missing from the request." });
+  }
+  if (!addressId) {
+    return res
+      .status(400)
+      .json({ error: "Address ID is missing from the request." });
+  }
+  try {
+    const address = await Address.findOne({
+      where: {
+        user_id: userId,
+        address_id: addressId,
+      },
+    });
+    if (!address) {
+      return res.status(404).json({ error: "Address not found" });
+    }
+    await address.destroy();
+    return res.status(200).json({ message: "Address deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting address:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+const updateAddress = async (req, res) => {
+  const { Address } = req.db;
+  const userId = req.user?.userId;
+  const addressId = req.params.id;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ error: "User ID is missing from the request." });
+  }
+  if (!addressId) {
+    return res
+      .status(400)
+      .json({ error: "Address ID is missing from the request." });
+  }
+
+  const { province_code, district_code, ward_code, specific_address } =
+    req.body;
+
+  if (!province_code || !district_code || !ward_code || !specific_address) {
+    return res.status(400).json({
+      error: "All fields are required",
+      missingFields: {
+        province: !province_code,
+        district: !district_code,
+        ward: !ward_code,
+        specific_address: !specific_address,
+      },
+    });
+  }
+
+  let addressUpdate;
+  try {
+    addressUpdate = await Address.findOne({
+      where: {
+        user_id: userId,
+        address_id: addressId,
+      },
+    });
+
+    if (!addressUpdate) {
+      return res.status(404).json({ error: "Address not found" });
+    }
+  } catch (err) {
+    console.error("Error fetching address:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+  try {
+    const [province_data, district_data, ward_data] = await Promise.all([
+      axios.get(`${process.env.API_MAP_VN}/p/${province_code}`).catch((err) => {
+        console.error(
+          "Error fetching province:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
+      axios.get(`${process.env.API_MAP_VN}/d/${district_code}`).catch((err) => {
+        console.error(
+          "Error fetching district:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
+      axios.get(`${process.env.API_MAP_VN}/w/${ward_code}`).catch((err) => {
+        console.error(
+          "Error fetching ward:",
+          err.response?.data || err.message
+        );
+        return null;
+      }),
+    ]);
+
+    if (!province_data?.data || !district_data?.data || !ward_data?.data) {
+      return res.status(400).json({
+        error: "Failed to fetch one or more address components",
+        details: {
+          province: province_data?.data || "Not found",
+          district: district_data?.data || "Not found",
+          ward: ward_data?.data || "Not found",
+        },
+      });
+    }
+
+    const updatedAddress = await addressUpdate.update({
+      province_code,
+      district_code,
+      ward_code,
+      province_name: province_data.data.name || "Unknown Province",
+      district_name: district_data.data.name || "Unknown District",
+      ward_name: ward_data.data.name || "Unknown Ward",
+      specific_address,
+    });
+
+    return res.status(200).json({
+      message: "Address updated successfully",
+      address: updatedAddress,
+    });
+  } catch (error) {
+    console.error("Error updating address:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const getAddressById = async (req, res) => {
   try {
     const userId = req.user?.userId; // Extract userId from the request object
@@ -111,4 +273,6 @@ const getAddressById = async (req, res) => {
 module.exports = {
   addNewAddress,
   getAddressById,
+  deleteAddress,
+  updateAddress,
 };

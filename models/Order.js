@@ -33,6 +33,10 @@ const Order = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    order_id_pay_with_MOMO: {
+      type: DataTypes.STRING(255),
+      defaultValue: null,
+    },
     address_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
