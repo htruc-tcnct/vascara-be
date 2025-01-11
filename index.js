@@ -17,7 +17,7 @@ app.use(morgan("tiny"));
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",
+      "http://localhost:3001",
       "https://vascara-fe.vercel.app",
       "http://192.168.1.7:3000",
     ],
