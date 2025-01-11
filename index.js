@@ -18,7 +18,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "http://192.168.2.59:3000",
+      "https://vascara-fe.vercel.app",
       "http://192.168.1.7:3000",
     ],
     credentials: true,
