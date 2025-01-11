@@ -245,12 +245,12 @@ const requestResetPassword = async (req, res) => {
     const token = jwt.sign({ id: user.user_id }, secret, { expiresIn: "5m" });
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${user.user_id}/${token}`;
 
+    console.log("Reset link:", resetLink); // Debugging
     const oauth2Client = new OAuth2(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
       "https://developers.google.com/oauthplayground"
     );
-
     oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
     const accessToken = await oauth2Client.getAccessToken();
 
@@ -267,10 +267,32 @@ const requestResetPassword = async (req, res) => {
     });
 
     const mailOptions = {
-      from: process.env.GOOGLE_APP_EMAIL,
+      from: `"VASCARA" <${process.env.GOOGLE_APP_EMAIL}>`,
       to: email,
       subject: "Password Reset Request",
-      html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">Reset Password</a><p>If you did not request a password reset, please ignore this email.</p>`,
+      html: `
+      <p>Dear ${user.name},</p>
+<p>We received a request to reset your password. Click the button below to reset your password:</p>
+<p>
+  <a href="${resetLink}" target="_blank" style="
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #007bff;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #007bff;
+    font-family: Arial, sans-serif;
+  ">
+    Reset Password
+  </a>
+</p>
+<p>If you did not request a password reset, please ignore this email or contact our support team.</p>
+<p>Thank you,</p>
+<p>Your Company Name</p>
+
+      `,
     };
 
     await transporter.sendMail(mailOptions);
@@ -284,7 +306,9 @@ const requestResetPassword = async (req, res) => {
       .status(500)
       .json({ message: "An error occurred, please try again later." });
   }
-};
+  }
+
+
 const updateInfo = async (req, res) => {
   const { User, Address } = req.db; // Model User và Address từ middleware
   const { userId } = req.params; // Lấy ID người dùng từ tham số URL

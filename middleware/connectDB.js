@@ -10,6 +10,9 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     dialect: process.env.DB_DIALECT || "mysql",
     logging: false, // Tắt log để giữ cho console sạch hơn
+    port: 3306,
+    // logging: console.log
+    
   }
 );
 
@@ -21,6 +24,7 @@ const connectDB = async () => {
     );
   } catch (error) {
     console.error("Unable to connect to the database:", error);
+  
   }
 };
 
